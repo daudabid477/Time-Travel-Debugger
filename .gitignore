@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Prerequisites
 *.d
 
@@ -68,6 +69,8 @@ vcpkg_installed/
 Testing/
 .cache/
 
+=======
+>>>>>>> 881bbcb (Initial commit: TTDB project setup)
 .vs/
 x64/
 Debug/
