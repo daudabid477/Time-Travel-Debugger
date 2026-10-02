@@ -58,6 +58,8 @@ public:
     {
 
         // pushes the value on the stack if max limit is not reached yet.
+        if (count >= MAX_STACK_DEPTH)
+            throw std::runtime_error("Stack overflow!");
 
         Node* temp = new Node(val);
         temp->next = top;
@@ -105,9 +107,9 @@ public:
         Node* temp = top;
         int32_t ct = 0;
 
-        while (current != nullptr && ct < maxLen) 
+        while (temp != nullptr && ct < maxLen) 
         {
-            out[ct] = temp;
+            out[ct] = temp->data;
             temp = temp->next;
             ct++;
         }
@@ -123,7 +125,14 @@ struct TimelineNode
     Snapshot* data;
     TimelineNode* next;
     TimelineNode* prev;
+
+    TimelineNode(Snapshot* s) 
+    {
+        data = s;
+        next = prev = nullptr;
+    }
 };
+
 class Timeline
 {
     TimelineNode* head, * tail;
@@ -133,16 +142,32 @@ public:
     // Implement these functions
     Timeline()
     {
+        head = tail = nullptr;
+        stepCount = 0;
     }
     void record(Snapshot* s)
     {
         // add record in the timeline
+        TimelineNode* temp = new TimelineNode(s);
+
+        if (head == nullptr) 
+        {
+            head = tail = temp;
+            stepCount++;
+            return;
+        }
+        temp->prev = tail;
+        tail->next = temp;
+        tail = temp;
+        stepCount++;
     }
     TimelineNode* begin()
     {
+        return head;
     }
     int32_t getStepCount()
     {
+        return stepCount;
     }
 };
 
