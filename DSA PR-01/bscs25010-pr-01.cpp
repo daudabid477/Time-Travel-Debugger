@@ -12,8 +12,8 @@
 #include <string>
 #include <cstdint>
 #include <fstream>
-//#include <unistd.h>
-//#include <sys/socket.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include <cstdio>
 using namespace std;
 
@@ -37,6 +37,12 @@ class Stack
     {
         T data;
         Node* next;
+
+        Node(const T& val) 
+        {
+            data = val;
+            next = nullptr;
+        }
     };
     Node* top;
     int32_t count;
@@ -44,31 +50,68 @@ class Stack
 public:
     // Implement these functions:
     Stack()
-    { // initialize the stack
+    {
+        top = nullptr;
+        count = 0;
     }
     void push(const T& val)
     {
 
         // pushes the value on the stack if max limit is not reached yet.
+
+        Node* temp = new Node(val);
+        temp->next = top;
+        top = temp;
+        count++;
+
     }
     T pop()
     {
         // pop the top value on the stack
+
+        if (isEmpty())
+            throw std::runtime_error("Stack is empty!");
+
+        Node* temp = top;
+        T val = top->data;
+        top = top->next;
+        delete temp;
+        count--;
+
+        return val;
+
     }
     T& peek()
     {
         // returns the top value on the stack
+        if(isEmpty())
+            throw std::runtime_error("Stack is empty!");
+
+        return top->data;
     }
     bool isEmpty()
     {
+        return count == 0;
     }
     int32_t depth()
     {
+        return count;
     }
     int32_t snapshot_into(T out[], int32_t maxLen)
     {
         // copies every frame, top to bottom in the array given as a parameter
         // this is what buildSnapshot() call, returns count written
+
+        Node* temp = top;
+        int32_t ct = 0;
+
+        while (current != nullptr && ct < maxLen) 
+        {
+            out[ct] = temp;
+            temp = temp->next;
+            ct++;
+        }
+        return ct;
     }
 };
 
