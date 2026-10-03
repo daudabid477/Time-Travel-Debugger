@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cstdio>
+
 using namespace std;
 
 // ---- Constants ----
@@ -224,10 +225,71 @@ struct PendingPatch
 bool readSourceLine(ifstream& in, string& out)
 {
     // reads the next nonblank line
+
+    string line{};
+
+    while (getline(in, line))
+    {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+
+        char empty = 't';
+
+        for (char c : line)
+        {
+            if (c != ' ' && c != '\t')
+            {
+                empty = 'f';
+                break;
+            }
+        }
+
+        if (empty == 't')
+            continue;
+
+        int32_t start = 0;
+
+        while (start < line.length() &&
+            (line[start] == ' ' || line[start] == '\t'))
+        {
+            start++;
+        }
+
+        if (start + 1 < line.length() &&
+            line[start] == '/' &&
+            line[start + 1] == '/')
+        {
+            continue;
+        }
+
+        out = line;
+        return true;
+    }
+
+    return false;
 }
+
 string firstWord(const string& line)
 {
     // returns first word from the input string
+
+    string word{};
+    int32_t start = 0;
+    int32_t end = -1;
+    
+    while (start < line.length() && (line[start] == ' ' ||
+        line[start] == '\t' || line[start] == '\r' || line[start] == '\n')) 
+    {
+        start++;
+    }
+    end = start;
+
+    while (end < line.length() && line[end] != ' ' && line[end] != '\t' && line[end] != '\r' && line[end] != '\n')
+    {
+        end++;
+    }
+    word = line.substr(start, end - start);
+    return word;
 }
 string secondWord(const string& line)
 {

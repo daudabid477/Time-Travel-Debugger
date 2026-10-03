@@ -1,5 +1,7 @@
-Setup project folder
+Setup project folder (1 october) 
 
-implemented data structures
+implemented data structures (2 october)
 
-working on installing ubuntu side by side
+working on installing ubuntu side by side(2 october)
+
+stage 0 in progress(3 october)
