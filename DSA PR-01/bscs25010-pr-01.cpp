@@ -332,6 +332,59 @@ string secondWord(const string& line)
 bool validateProgram(const char* sourcePath)
 {
     // for each func defined there should be exactly one func_end and no nested funcs allowed - 
+
+    ifstream fin(sourcePath);
+    if (!fin)
+    {
+        cout << "File not found!\n";
+        return false;
+    }
+
+    bool insideFunction = false;
+    string line{};
+
+    while (readSourceLine(fin, line)) 
+    {
+        string first = firstWord(line);
+        string second = secondWord(line);
+
+        if (first == "func") 
+        {
+            if (insideFunction == true) 
+            {
+                cout << "Err: nested functions not allowed!\n";
+                return false;
+            }
+
+            if (second.empty()) 
+            {
+                cout << "Err: function name empty not allowed\n";
+                return false;
+            }
+
+            insideFunction = true;
+        }
+        else if (first == "func_end") 
+        {
+            if (insideFunction == false) 
+            {
+                cout << "Err: ending a func without starting is not allowed!\n";
+                return false;
+            }
+
+            insideFunction = false;
+        }
+    }
+
+    if (insideFunction) 
+    {
+        cout << "Err: a func not ending in the code!\n";
+        return false;
+    }
+
+    fin.close();
+
+    return true;
 }
 
 // PASS 0x1: RESOLVE() -> resolve.bin
