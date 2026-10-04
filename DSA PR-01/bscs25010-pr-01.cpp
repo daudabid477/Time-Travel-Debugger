@@ -291,10 +291,44 @@ string firstWord(const string& line)
     word = line.substr(start, end - start);
     return word;
 }
+
 string secondWord(const string& line)
 {
     // returns the second word
+    
+    string word{};
+    int32_t start = 0;
+    int32_t end = -1;
+
+    while (start < line.length() && (line[start] == ' ' || line[start] == '\t' || line[start] == '\r' || line[start] == '\n')) 
+    {
+        start++;
+    }
+    end = start;
+
+    while(end < line.length() && line[end] != ' ' && line[end] != '\t' && line[end] != '\r' && line[end] != '\n')
+    {
+        end++;
+    }
+    start = end;
+
+    while (start < line.length() && (line[start] == ' ' || line[start] == '\t' || line[start] == '\r' || line[start] == '\n'))
+    {
+        start++;
+    }
+    end = start;
+
+    while (end < line.length() && line[end] != ' ' && line[end] != '\t' && line[end] != '\r' && line[end] != '\n')
+    {
+        end++;
+    }
+
+    word = line.substr(start, end - start);
+
+    return word;
 }
+
+
 bool validateProgram(const char* sourcePath)
 {
     // for each func defined there should be exactly one func_end and no nested funcs allowed - 
