@@ -428,13 +428,6 @@ int64_t readResolveRecord(FILE* f, string& outText)
     return offsetField;
 }
 
-
-int64_t resolveProgram(const char* sourcePath, const char* resolveBinPath)
-{
-    FuncEntry funcArray[MAX_FUNCS];
-    int32_t funcCount = 0;
-    PendingPatch patches[MAX_PATCHES];
-    int32_t patchCount = 0;
     // Every source line becomes one record holding the raw line, as-is.
     // resolve() only PEEKS at the leading word(s) -- enough to spot FUNC
     // (remember its position) and CALL (remember which function it needs
@@ -443,6 +436,111 @@ int64_t resolveProgram(const char* sourcePath, const char* resolveBinPath)
     // with its target's position. Patching happens after the full write
     // Returns the byte offset of main's FUNC header record.
     // if there is no main return the error 
+int64_t resolveProgram(const char* sourcePath, const char* resolveBinPath)
+{
+    FuncEntry funcArray[MAX_FUNCS];
+
+    int32_t funcCount = 0;
+
+    PendingPatch patches[MAX_PATCHES];
+
+    int32_t patchCount = 0;
+
+    ifstream fin(sourcePath);
+    if(!fin)
+    {
+        cout<<"Err: File not found!\n";
+        return -1;
+    }
+
+    FILE* resolveBinFile = fopen(resolveBinPath,"wb+");
+
+    if(resolveBinFile == nullptr)
+    {
+        cout<<"Err: cannot create resolve.bin!\n";
+        return -1;
+    }
+
+    string line{};
+    int64_t currentOffset = 0;
+
+    while(readSourceLine(fin, line))
+    {
+        string first = firstWord(line);
+        string second = secondWord(line);
+
+        int64_t recordPos = writeResolveRecord(resolveBinFile,currentOffset,line);
+
+        currentOffset += 8+4+line.size();
+
+        if(first == "func")
+        {
+            if(funcCount >= MAX_FUNCS)
+            {
+                cout<<"Err: Max funcs limit exceeded!\n";
+                return -1;
+            }
+            funcArray[funcCount].funcName = second;
+            funcArray[funcCount].byteOffsetInResolveBin = recordPos;
+
+            funcCount++;
+        }
+        else if(first == "call")
+        {
+            if(patchCount >= MAX_PATCHES)
+            {
+                cout<<"Err: Max patch limit exceeded!\n";
+                return -1;
+            }
+
+            patches[patchCount].byteOffsetOfOffsetField = recordPos;
+            patches[patchCount].targetFuncName = second;
+            patchCount++;
+        }
+    }
+
+    for(int32_t i = 0; i< patchCount;i++)
+    {
+        int64_t targetOffset = -1;
+
+        for(int32_t j =0; j<funcCount; j++)
+        {
+            if(funcArray[j].funcName == patches[i].targetFuncName)
+            {
+                targetOffset = funcArray[j].byteOffsetInResolveBin;
+                break;
+            }
+        }
+
+        if(targetOffset == -1)
+        {
+            cout<<"Err: func not found!\n";
+            return -1;
+        }
+
+        fseek(resolveBinFile, patches[i].byteOffsetOfOffsetField, SEEK_SET);
+        fwrite(&targetOffset,sizeof(int64_t), 1,resolveBinFile);
+    }
+
+    int64_t mainOffset = -1;
+
+    for(int32_t i =0;i<funcCount;i++)
+    {
+        if(funcArray[i].funcName == "main")
+        {
+            mainOffset = funcArray[i].byteOffsetInResolveBin;
+            break;
+        }        
+    }
+
+    if(mainOffset == -1)
+    {
+        cout<<"Err: main func not found!\n";
+        return -1;
+    }
+
+    fclose(resolveBinFile);
+    return mainOffset
 }
 
 // PASS 0x2: EXECUTION (tokenization happens here)
