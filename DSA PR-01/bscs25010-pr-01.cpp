@@ -392,6 +392,14 @@ int64_t writeResolveRecord(FILE* f, int64_t offsetField, const string& text)
 {
     // writes one [offset(8B)][size(4B)][string] record at the current file position
     // returns this record's own starting byte position
+
+    int64_t currentPosition = ftell(f);
+    int32_t sizeofString = text.size();
+
+    fwrite(&offsetField, sizeof(int64_t),1,f);
+    fwrite(&sizeofString, sizeof(int32_t),1,f);
+    fwrite(&text.c_str(), sizeof(char),sizeofString,f);
+
 }
 int64_t readResolveRecord(FILE* f, string& outText)
 {
