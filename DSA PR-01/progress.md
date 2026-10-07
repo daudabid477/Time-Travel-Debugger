@@ -10,4 +10,6 @@ Installed ubuntu(3 october)
 
 Stage 1 completed (4 october)
 
-Started working on stage 1 (5 october)
+Started working on stage 2 (5 october)
+
+Stage 2 in progress(7 october)

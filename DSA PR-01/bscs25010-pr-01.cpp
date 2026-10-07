@@ -398,13 +398,32 @@ int64_t writeResolveRecord(FILE* f, int64_t offsetField, const string& text)
 
     fwrite(&offsetField, sizeof(int64_t),1,f);
     fwrite(&sizeofString, sizeof(int32_t),1,f);
-    fwrite(&text.c_str(), sizeof(char),sizeofString,f);
+    fwrite(text.c_str(), sizeof(char),sizeofString,f);
 
+    return currentPosition;
 }
+
 int64_t readResolveRecord(FILE* f, string& outText)
 {
     // reads one record at the current position and advances past it, returns the offset field - the raw line text comes back untouched in outText.
+
+    int64_t offsetField;
+    int32_t sizeofString;
+
+    fread(&offsetField,sizeof(int64_t),1,f);
+    fread(&sizeofString,sizeof(int32_t),1,f);
+
+    char* buffer = new char[sizeofString];
+
+    fread(buffer,sizeof(char),sizeofString,f);
+
+    outText = string(buffer,sizeofString);
+    delete[] buffer;
+
+    return offsetField;
 }
+
+
 int64_t resolveProgram(const char* sourcePath, const char* resolveBinPath)
 {
     FuncEntry funcArray[MAX_FUNCS];
