@@ -406,12 +406,17 @@ int64_t writeResolveRecord(FILE* f, int64_t offsetField, const string& text)
 int64_t readResolveRecord(FILE* f, string& outText)
 {
     // reads one record at the current position and advances past it, returns the offset field - the raw line text comes back untouched in outText.
+    if(f == nullptr)
+        return -1;
 
     int64_t offsetField;
     int32_t sizeofString;
 
     fread(&offsetField,sizeof(int64_t),1,f);
     fread(&sizeofString,sizeof(int32_t),1,f);
+
+    if(sizeofString < 0)
+        return -1;
 
     char* buffer = new char[sizeofString];
 
