@@ -8,4 +8,6 @@ stage 1 in progress(3 october)
 
 Installed ubuntu(3 october)
 
-Stage 1 completed{I think :)} (4 october)
+Stage 1 completed (4 october)
+
+Started working on stage 1 (5 october)
