@@ -615,6 +615,8 @@ int32_t tokenizeLine(const string& line, Token tokens[], int32_t maxTokens)
 
     return count;
 }
+
+
 Snapshot* buildSnapshot(Stack<Frame>& callStack)
 {
     // build the snapshot based on the callStack given
@@ -622,15 +624,45 @@ Snapshot* buildSnapshot(Stack<Frame>& callStack)
     Snapshot* snapshot = new Snapshot;
     snapshot->stackDepth = callStack.snapshot_into(snapshot->callStack,MAX_STACK_DEPTH);
     return snapshot;
-
 }
 
-    // initialize the call stack
-    // make the main frame
-    // push main frame on the call stack
 
-    // implementation:
-    // execute line by line, and according to the keyword perform action
+void setVariable(Frame& frame, const string& name, int32_t value)
+{
+    for(int32_t i = 0; i < frame.localCount; i++)
+    {
+        if(frame.locals[i].name == name)
+        {
+            frame.locals[i].value = value;
+            return;
+        }
+    }
+
+    if(frame.localCount >= MAX_VARS_PER_FRAME)
+    {
+        throw runtime_error("local variables limit exceeded!");
+    }
+
+    frame.locals[frame.localCount].name = name;
+    frame.locals[frame.localCount].value = value;
+    frame.localCount++;
+}
+
+
+
+int32_t getVariable(Frame& frame, const string& name)
+{
+    for(int32_t i = 0; i < frame.localCount; i++)
+    {
+        if(frame.locals[i].name == name)
+        {
+            return frame.locals[i].value;
+        }
+    }
+
+    throw runtime_error("Variable not found: " + name);
+}
+
 
 
 void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& timeline)
@@ -658,35 +690,154 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         return;
     }
 
+//    string line;
+
+    // while(true)
+    // {
+    //     int64_t storedOffset = readResolveRecord(resolveBinFile, line);
+    //     if(storedOffset == -1)
+    //     {
+    //         break;
+    //     }
+    //     cout<<"instruction:  "<< line <<endl;
+        
+    //     if(firstWord(line) == "func_end")
+    //     {
+    //         break;
+    //     }
+    // }
+
     string line;
 
     while(true)
     {
         int64_t storedOffset = readResolveRecord(resolveBinFile, line);
+
         if(storedOffset == -1)
         {
-            break;
+        break;
         }
-        cout<<"instruction:  "<< line <<endl;
-        
-        if(firstWord(line) == "func_end")
+
+        Token tokens[MAX_TOKENS];
+        int32_t tokenCount = tokenizeLine(line, tokens, MAX_TOKENS);
+
+        if(tokenCount <= 0)
+        {
+            continue;
+        }
+
+        if(tokens[0].text == "func_end")
         {
             break;
         }
+
+        if(tokens[0].text == "set")
+        {
+            if(tokenCount != 3)
+            {
+                throw runtime_error("Invalid set instruction!");
+            }
+
+        int32_t value = stoi(tokens[2].text);
+
+        setVariable(callStack.peek(), tokens[1].text, value);
+        }
+        else if(tokens[0].text == "add")
+        {
+            if(tokenCount != 3)
+            {
+                throw runtime_error("Invalid add instruction!");
+            }
+
+            string variableName = tokens[1].text;
+            int32_t currentValue =
+            getVariable(callStack.peek(), variableName);
+
+            int32_t amount = stoi(tokens[2].text);
+
+            setVariable(callStack.peek(),variableName,currentValue + amount);
+        }
+        
+        else if(tokens[0].text == "sub")
+        {
+            if(tokenCount != 3)
+            {
+                throw runtime_error("Invalid sub instruction!");
+            }
+
+            string variableName = tokens[1].text;
+
+            int32_t currentValue =
+            getVariable(callStack.peek(), variableName);
+
+            int32_t amount = stoi(tokens[2].text);
+
+            setVariable(callStack.peek(),variableName,currentValue - amount);
+        }
+        else if(tokens[0].text == "mul")
+        {
+            if(tokenCount != 3)
+            {
+                throw runtime_error("Invalid mul instruction!");
+            }
+
+            string variableName = tokens[1].text;
+
+            int32_t currentValue =
+            getVariable(callStack.peek(), variableName);
+
+            int32_t amount = stoi(tokens[2].text);
+
+            setVariable(callStack.peek(),variableName,currentValue * amount);
+        }
+        else if(tokens[0].text == "div")
+        {
+            if(tokenCount != 3)
+            {
+                throw runtime_error("Invalid div instruction!");
+            }
+
+            string variableName = tokens[1].text;
+
+            int32_t currentValue =
+            getVariable(callStack.peek(), variableName);
+
+            int32_t amount = stoi(tokens[2].text);
+
+            if(amount == 0)
+            {
+                throw runtime_error("Division by zero!");
+            }
+
+            setVariable(callStack.peek(),variableName,currentValue / amount);
+        }
+
+    }
+    
+
+    // temp tesiting
+    Frame& frame = callStack.peek();
+
+    for (int32_t i = 0; i < frame.localCount; i++)
+    {
+        cout << frame.locals[i].name
+         << " = "
+         << frame.locals[i].value
+         << '\n';
     }
 
-
 }
+
 
 // PASS 0x3: SERIALIZE TIMELINE
-void writeTdbg(Timeline& timeline, const char* tdbgPath)
-{
-    // placeholder for header
-    // index array of the size of stepcount from the timeline
-    // placing each snapshot in the file while maintaining the index(starting point of each nth snapshot)
-    // after timeline add the index array i the file
-    // update the header
-}
+// void writeTdbg(Timeline& timeline, const char* tdbgPath)
+// {
+//     // placeholder for header
+//     // index array of the size of stepcount from the timeline
+//     // placing each snapshot in the file while maintaining the index(starting point of each nth snapshot)
+//     // after timeline add the index array i the file
+//     // update the header
+// }
 // main section
 int32_t main()
 {
