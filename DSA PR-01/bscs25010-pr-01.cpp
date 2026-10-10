@@ -564,25 +564,47 @@ struct Token
 
 int32_t tokenizeLine(const string& line, Token tokens[], int32_t maxTokens)
 {
-    stringstream myline(line);
     int32_t count = 0;
-    string word{};
+    int32_t i = 0;
 
-    while(myline >> word)
+    while (i < line.length() && (line[i] == ' ' || line[i] == '\t'))
     {
-        if(count >= maxTokens)
+        i++;
+    }
+
+    while (i < line.length())
+    {
+        while (i < line.length() &&
+            (line[i] == ' ' || line[i] == '\t'))
         {
-            return -1;
+            i++;
         }
-        if(count == 0)
+
+        if (i >= line.length())
+            break;
+
+        int32_t start = i;
+
+        while (i < line.length() &&
+            line[i] != ' ' && line[i] != '\t')
+        {
+            i++;
+        }
+
+        string word = line.substr(start, i - start);
+
+        if (count >= maxTokens)
+            return -1;
+
+        if (count == 0)
         {
             tokens[count].type = KEYWORD;
         }
-        else if(count == 1)
+        else if (count == 1)
         {
             tokens[count].type = IDENTIFIER;
         }
-        else 
+        else
         {
             tokens[count].type = PARAM;
         }
@@ -590,11 +612,17 @@ int32_t tokenizeLine(const string& line, Token tokens[], int32_t maxTokens)
         tokens[count].text = word;
         count++;
     }
+
     return count;
 }
 Snapshot* buildSnapshot(Stack<Frame>& callStack)
 {
     // build the snapshot based on the callStack given
+
+    Snapshot* snapshot = new Snapshot;
+    snapshot->stackDepth = callStack.snapshot_into(snapshot->callStack,MAX_STACK_DEPTH);
+    return snapshot;
+
 }
 void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& timeline)
 {
@@ -713,3 +741,37 @@ int32_t main1()
 
 // testing tokenize line
 
+
+// Your tokenizeLine() function goes here
+
+int main()
+{
+    Token tokens[MAX_TOKENS];
+
+    string line = "  call   foofa   c   d  ";
+
+    int32_t count = tokenizeLine(line, tokens, MAX_TOKENS);
+
+    if (count == -1)
+    {
+        cout << "Too many tokens!\n";
+        return 1;
+    }
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        cout << "Token " << i
+             << " | Type: ";
+
+        if (tokens[i].type == KEYWORD)
+            cout << "KEYWORD";
+        else if (tokens[i].type == IDENTIFIER)
+            cout << "IDENTIFIER";
+        else
+            cout << "PARAM";
+
+        cout << " | Text: " << tokens[i].text << '\n';
+    }
+
+    return 0;
+}
