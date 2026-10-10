@@ -21,3 +21,9 @@ Stage 2 completed (8 october)
 Started stage 3 (9 octber)
 
 Working on stage 3 functions (10 october)
+
+Partially implemented execute program (10 october)
+
+Testing execute program (10 ocotber)
+
+Proceeding further after testing (10 ocotber)

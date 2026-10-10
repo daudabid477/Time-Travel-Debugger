@@ -624,14 +624,53 @@ Snapshot* buildSnapshot(Stack<Frame>& callStack)
     return snapshot;
 
 }
-void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& timeline)
-{
+
     // initialize the call stack
     // make the main frame
     // push main frame on the call stack
 
     // implementation:
     // execute line by line, and according to the keyword perform action
+
+
+void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& timeline)
+{
+    FILE* resolveBinFile = fopen(resolveBinPath, "rb");
+    if(resolveBinFile == nullptr)
+    {
+        cout<<"Err: File not found!\n";
+        return;
+    }
+
+    Stack<Frame> callStack;
+
+    Frame mainFrame{};
+    mainFrame.func_name = "main";
+    mainFrame.argc = 0;
+    mainFrame.returnLine = -1;
+    mainFrame.localCount = 0;
+
+    callStack.push(mainFrame);
+
+    if(fseek(resolveBinFile, mainOffset, SEEK_SET) != 0)
+    {
+        cout<<"Err: cannot go to main!\n";
+        return;
+    }
+
+    string line;
+
+    int64_t storedOffset = readResolveRecord(resolveBinFile, line);
+
+    if(storedOffset == -1)
+    {
+        cout<<"Err: cannot read insruction!\n";
+        return;
+    }
+
+    cout << "First instruction: " << line << endl;
+
+
 }
 
 // PASS 0x3: SERIALIZE TIMELINE
@@ -644,7 +683,7 @@ void writeTdbg(Timeline& timeline, const char* tdbgPath)
     // update the header
 }
 // main section
-int32_t main1()
+int32_t main()
 {
 
     if (!validateProgram("source.bin"))
@@ -655,10 +694,11 @@ int32_t main1()
 
     int64_t mainOffset = resolveProgram("source.bin", "resolve.bin");
 
+    cout << "mainOffset: " << mainOffset << endl; 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);
 
-    writeTdbg(timeline, "session.tdbg");
+ //   writeTdbg(timeline, "session.tdbg");
 
     return 0;
 }
@@ -744,7 +784,7 @@ int32_t main1()
 
 // Your tokenizeLine() function goes here
 
-int main()
+int main22()
 {
     Token tokens[MAX_TOKENS];
 
