@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cstdio>
+#include <sstream>
 
 using namespace std;
 
@@ -540,7 +541,7 @@ int64_t resolveProgram(const char* sourcePath, const char* resolveBinPath)
     }
 
     fclose(resolveBinFile);
-    return mainOffset
+    return mainOffset;
 }
 
 // PASS 0x2: EXECUTION (tokenization happens here)
@@ -555,12 +556,41 @@ struct Token
     TokenType type;
     string text;
 };
-int32_t tokenizeLine(const string& line, Token tokens[], int32_t maxTokens)
-{
-    // first word is always a instruction keyword
+
+// first word is always a instruction keyword
     // instruction set = [func, func_end, call, set, add, sub, mul and div]
     // next word is identifier like name of a function, variable name
     // after identifier all are the params/arg, space separated
+
+int32_t tokenizeLine(const string& line, Token tokens[], int32_t maxTokens)
+{
+    stringstream myline(line);
+    int32_t count = 0;
+    string word{};
+
+    while(myline >> word)
+    {
+        if(count >= maxTokens)
+        {
+            return -1;
+        }
+        if(count == 0)
+        {
+            tokens[count].type = KEYWORD;
+        }
+        else if(count == 1)
+        {
+            tokens[count].type = IDENTIFIER;
+        }
+        else 
+        {
+            tokens[count].type = PARAM;
+        }
+
+        tokens[count].text = word;
+        count++;
+    }
+    return count;
 }
 Snapshot* buildSnapshot(Stack<Frame>& callStack)
 {
@@ -586,7 +616,7 @@ void writeTdbg(Timeline& timeline, const char* tdbgPath)
     // update the header
 }
 // main section
-int32_t main()
+int32_t main1()
 {
 
     if (!validateProgram("source.bin"))
@@ -604,3 +634,77 @@ int32_t main()
 
     return 0;
 }
+// }
+// void testResolveBin(const char* path)
+// {
+//     FILE* f = fopen(path, "rb");
+
+//     if (f == nullptr)
+//     {
+//         cout << "Could not open resolve.bin\n";
+//         return;
+//     }
+
+//     string text;
+
+//     while (true)
+//     {
+//         int64_t offset = readResolveRecord(f, text);
+
+//         if (offset == -1)
+//             break;
+
+//         cout << "Offset: " << offset
+//              << " | Text: " << text << endl;
+//     }
+
+//     fclose(f);
+// }
+// void dumpResolveBin(const char* resolveBinPath, const char* textPath)
+// {
+//     FILE* f = fopen(resolveBinPath, "rb");
+
+//     if (f == nullptr)
+//     {
+//         cout << "Could not open resolve.bin\n";
+//         return;
+//     }
+
+//     ofstream out(textPath);
+
+//     if (!out)
+//     {
+//         cout << "Could not create test.txt\n";
+//         fclose(f);
+//         return;
+//     }
+
+//     string text;
+
+//     while (true)
+//     {
+//         int64_t storedOffset = readResolveRecord(f, text);
+
+//         if (storedOffset == -1)
+//             break;
+
+//         out << "Offset: " << storedOffset
+//             << " | Text: " << text << '\n';
+//     }
+
+//     fclose(f);
+//     out.close();
+
+//     cout << "resolve.bin dumped to test.txt\n";
+// }
+// int main()
+// {
+//     int64_t mainOffset =
+//         resolveProgram("source.bin", "resolve.bin");
+
+//     cout << "Main offset: " << mainOffset << endl;
+
+//     dumpResolveBin("resolve.bin", "test1.txt");
+
+//     return 0;
+// }
