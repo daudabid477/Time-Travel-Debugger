@@ -660,15 +660,20 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
 
     string line;
 
-    int64_t storedOffset = readResolveRecord(resolveBinFile, line);
-
-    if(storedOffset == -1)
+    while(true)
     {
-        cout<<"Err: cannot read insruction!\n";
-        return;
+        int64_t storedOffset = readResolveRecord(resolveBinFile, line);
+        if(storedOffset == -1)
+        {
+            break;
+        }
+        cout<<"instruction:  "<< line <<endl;
+        
+        if(firstWord(line) == "func_end")
+        {
+            break;
+        }
     }
-
-    cout << "First instruction: " << line << endl;
 
 
 }
