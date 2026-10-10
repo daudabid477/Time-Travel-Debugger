@@ -81,3 +81,6 @@ Release/
 source.bin
 resolve.bin
 *.tdbg
+*.txt
+*.txt
+large_files/
