@@ -33,3 +33,5 @@ Implemented for each keyword (11 ocotber)
 Testing with different source bin codes (11 october)
 
 Working on navigating throuhgh my timeline (11 october)
+
+Stage 3 completed (11 ocotber)
