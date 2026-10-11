@@ -27,3 +27,7 @@ Partially implemented execute program (10 october)
 Testing execute program (10 ocotber)
 
 Proceeding further after testing (10 ocotber)
+
+Implemented for each keyword (11 ocotber)
+
+Testing with different source bin codes (11 october)

@@ -173,6 +173,10 @@ public:
     }
 };
 
+
+
+
+
 // Core structs
 struct Variable
 {
@@ -627,6 +631,49 @@ Snapshot* buildSnapshot(Stack<Frame>& callStack)
 }
 
 
+
+void printSnapshot(const Snapshot& snapshot)
+{
+    cout << "Stack depth: " << snapshot.stackDepth << '\n';
+
+    for (int32_t i = 0; i < snapshot.stackDepth; i++)
+    {
+        const Frame& frame = snapshot.callStack[i];
+
+        cout << "Function: " << frame.func_name << '\n';
+
+        cout << "Local variables:\n";
+
+        for (int32_t j = 0; j < frame.localCount; j++)
+        {
+            cout << "  "
+                 << frame.locals[j].name
+                 << " = "
+                 << frame.locals[j].value
+                 << '\n';
+        }
+    }
+
+    cout << "--------------------\n";
+}
+
+void printTimeline(Timeline& timeline)
+{
+    TimelineNode* current = timeline.begin();
+
+    int32_t step = 1;
+
+    while (current != nullptr)
+    {
+        cout << "STEP " << step << '\n';
+
+        printSnapshot(*current->data);
+
+        current = current->next;
+        step++;
+    }
+}
+
 void setVariable(Frame& frame, const string& name, int32_t value)
 {
     for(int32_t i = 0; i < frame.localCount; i++)
@@ -690,23 +737,6 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         return;
     }
 
-//    string line;
-
-    // while(true)
-    // {
-    //     int64_t storedOffset = readResolveRecord(resolveBinFile, line);
-    //     if(storedOffset == -1)
-    //     {
-    //         break;
-    //     }
-    //     cout<<"instruction:  "<< line <<endl;
-        
-    //     if(firstWord(line) == "func_end")
-    //     {
-    //         break;
-    //     }
-    // }
-
     string line;
 
     while(true)
@@ -715,8 +745,9 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
 
         if(storedOffset == -1)
         {
-        break;
+            break;
         }
+        int64_t nextPosition = ftell(resolveBinFile);
 
         Token tokens[MAX_TOKENS];
         int32_t tokenCount = tokenizeLine(line, tokens, MAX_TOKENS);
@@ -725,17 +756,37 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         {
             continue;
         }
-
+        /// func end starting  
         if(tokens[0].text == "func_end")
         {
-            break;
+            if(callStack.depth() == 1)
+            {
+                Snapshot* currentSnapshot = buildSnapshot(callStack);
+                timeline.record(currentSnapshot);
+
+                break;
+            }
+            callStack.pop();
+            int64_t returnPos = callStack.peek().returnLine;
+
+            if(fseek(resolveBinFile, returnPos, SEEK_SET) != 0)
+            {
+                throw runtime_error("Err: cannot return to caller! \n");
+            }
+            
+            Snapshot* currentSnapshot = buildSnapshot(callStack);
+            timeline.record(currentSnapshot);
+            
+            continue;
         }
 
+
+        ///  func end ending
         if(tokens[0].text == "set")
         {
             if(tokenCount != 3)
             {
-                throw runtime_error("Invalid set instruction!");
+                throw runtime_error("Err: invalid set instruction!");
             }
 
         int32_t value = stoi(tokens[2].text);
@@ -746,7 +797,7 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         {
             if(tokenCount != 3)
             {
-                throw runtime_error("Invalid add instruction!");
+                throw runtime_error("Err: invalid add instruction!");
             }
 
             string variableName = tokens[1].text;
@@ -762,7 +813,7 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         {
             if(tokenCount != 3)
             {
-                throw runtime_error("Invalid sub instruction!");
+                throw runtime_error("Err: invalid sub instruction!");
             }
 
             string variableName = tokens[1].text;
@@ -778,7 +829,7 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         {
             if(tokenCount != 3)
             {
-                throw runtime_error("Invalid mul instruction!");
+                throw runtime_error("Err: invalid mul instruction!");
             }
 
             string variableName = tokens[1].text;
@@ -794,7 +845,7 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
         {
             if(tokenCount != 3)
             {
-                throw runtime_error("Invalid div instruction!");
+                throw runtime_error("Err: invalid div instruction!");
             }
 
             string variableName = tokens[1].text;
@@ -806,25 +857,88 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
 
             if(amount == 0)
             {
-                throw runtime_error("Division by zero!");
+                throw runtime_error("Err: division by zero!");
             }
 
             setVariable(callStack.peek(),variableName,currentValue / amount);
         }
+        else if(tokens[0].text == "call")
+        {
+            if(tokenCount != 2)
+            {
+                throw runtime_error("Err: invalid call instruction!\n");
+            }
+
+            string funcName = tokens[1].text;
+            if(fseek(resolveBinFile,0,SEEK_SET) != 0)
+            {
+                throw runtime_error("Err: cannot seek in resolve bin file!\n");
+            }
+// while(true)
+            // {
+            //     int64_t storedOffset = readResolveRecord(resolveBinFile, funcLine);
+
+            //     if(storedOffset == -1)
+            //     {
+            //         break;
+            //     }
+
+
+
+            //     if(firstWord(funcLine) == "func" && secondWord(funcLine) == funcName)
+            //     {
+            //         funcOffset = ftell(resolveBinFile);
+            //         break;
+            //     }
+            // }
+
+
+//            string funcLine;
+            
+            int64_t funcOffset = storedOffset;
+            
+            
+            if(funcOffset == -1)
+            {
+                throw runtime_error("Err: func not found! \n");
+            }
+
+            Frame& caller = callStack.peek();
+            caller.returnLine = nextPosition;
+
+            Frame newFrame{};
+            newFrame.func_name = funcName;
+            newFrame.argc = 0;
+            newFrame.returnLine = -1;
+            newFrame.localCount = 0;
+
+            callStack.push(newFrame);
+
+            if(fseek(resolveBinFile,funcOffset,SEEK_SET) != 0)
+            {
+                throw runtime_error("Err: cannot seek into func!\n");
+            }
+
+        }
+
+        Snapshot* currentSnapshot = buildSnapshot(callStack);
+        timeline.record(currentSnapshot);
 
     }
     
+    cout << "Total snapshots: "
+     << timeline.getStepCount() << '\n';
 
     // temp tesiting
-    Frame& frame = callStack.peek();
+    // Frame& frame = callStack.peek();
 
-    for (int32_t i = 0; i < frame.localCount; i++)
-    {
-        cout << frame.locals[i].name
-         << " = "
-         << frame.locals[i].value
-         << '\n';
-    }
+    // for (int32_t i = 0; i < frame.localCount; i++)
+    // {
+    //     cout << frame.locals[i].name
+    //      << " = "
+    //      << frame.locals[i].value
+    //      << '\n';
+    // }
 
 }
 
@@ -853,7 +967,7 @@ int32_t main()
     cout << "mainOffset: " << mainOffset << endl; 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);
-
+    printTimeline(timeline);
  //   writeTdbg(timeline, "session.tdbg");
 
     return 0;
