@@ -31,3 +31,5 @@ Proceeding further after testing (10 ocotber)
 Implemented for each keyword (11 ocotber)
 
 Testing with different source bin codes (11 october)
+
+Working on navigating throuhgh my timeline (11 october)

@@ -942,6 +942,59 @@ void executeProgram(const char* resolveBinPath, int64_t mainOffset, Timeline& ti
 
 }
 
+void navigateTimeline(Timeline& timeline)
+{
+    TimelineNode* current = timeline.begin();
+
+    if (current == nullptr)
+    {
+        cout << "Timeline is empty!\n";
+        return;
+    }
+
+    char choice;
+
+    while (true)
+    {
+        cout << "\nCurrent snapshot:\n";
+        printSnapshot(*current->data);
+
+        cout << "n = next, p = previous, q = quit: ";
+        cin >> choice;
+
+        if (choice == 'q')
+        {
+            break;
+        }
+        else if (choice == 'n')
+        {
+            if (current->next != nullptr)
+            {
+                current = current->next;
+            }
+            else
+            {
+                cout << "Already at the last snapshot!\n";
+            }
+        }
+        else if (choice == 'p')
+        {
+            if (current->prev != nullptr)
+            {
+                current = current->prev;
+            }
+            else
+            {
+                cout << "Already at the first snapshot!\n";
+            }
+        }
+        else
+        {
+            cout << "Invalid choice!\n";
+        }
+    }
+}
+
 
 // PASS 0x3: SERIALIZE TIMELINE
 // void writeTdbg(Timeline& timeline, const char* tdbgPath)
@@ -967,7 +1020,7 @@ int32_t main()
     cout << "mainOffset: " << mainOffset << endl; 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);
-    printTimeline(timeline);
+    navigateTimeline(timeline);
  //   writeTdbg(timeline, "session.tdbg");
 
     return 0;
