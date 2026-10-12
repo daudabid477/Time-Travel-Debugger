@@ -1035,6 +1035,50 @@ bool writeDenseIndex(FILE* file, const int64_t offsets[], int32_t stepCount)
     return true;
 }
 
+// PASS 0x3: SERIALIZE TIMELINE
+void writeTdbg(Timeline& timeline, const char* tdbgPath)
+{
+    FILE* f = fopen(tdbgPath, "wb+");
+
+    if (f == nullptr)
+        throw runtime_error("Err: cannot create tdbg file!");
+
+    int32_t steps = timeline.getStepCount();
+    vector<int64_t> offsets(steps);          
+
+    TTDBHeader h{};
+    h.magic[0] = 'T';
+    h.magic[1] = 'T';
+    h.magic[2] = 'D';
+    h.magic[3] = 'B';
+    h.version = 1;
+    h.stepCount = steps;
+    h.indexOffset = 0;                     
+
+    
+    writeHeader(f, h);
+
+    bool success = writeTimeline(f, timeline, offsets.data(), steps);
+
+    
+    if (success)
+    {
+        h.indexOffset = ftell(f);            
+        success = writeDenseIndex(f, offsets.data(), steps);
+    }
+
+    
+    if (success)
+    {
+        fseek(f, 0, SEEK_SET);
+        writeHeader(f, h);
+    }
+
+    fclose(f);
+
+    if (!success)
+        throw runtime_error("Err: failed writing tdbg file!");
+}
 
 
 int32_t main()
@@ -1051,6 +1095,7 @@ int32_t main()
 
     Timeline timeline;
     executeProgram("resolve.bin", mainOffset, timeline);
+
 
     writeTdbg(timeline, "session.tdbg");
 
